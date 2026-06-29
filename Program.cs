@@ -16,7 +16,7 @@ namespace Batalha
 
         static void Main()
         {
-
+            Console.WriteLine("me diga seu nome");
             nome = Console.ReadLine();
 
             Console.Write(nome + " ");
@@ -59,8 +59,8 @@ namespace Batalha
             if(RI == 1)
             {
                 Mapa mapa1 = new Mapa();
-                mapa1.definir_espaço();
-                mapa1.gerar_mapa();
+                mapa1.definir_espaço(20, 25);
+                mapa1.gerar_mapa(5, 5);
                 mapa1.mostrar_mapa();
             }
             if(RI == 2)
@@ -97,8 +97,10 @@ namespace Batalha
         {
             if(RI > pontos)
             {
+
                 Console.WriteLine("voce nao tem essa quantia de pontos, coloque uma quantia menor");
                 RI = int.Parse(Console.ReadLine());
+
                 pontosTeste();
             }
             else
@@ -146,33 +148,44 @@ namespace Batalha
 
 
         }
-        public void gerar_mapa()
+        public void gerar_mapa(int aleat_chuncks = 10, int esp_alea = 20)
         {
             Random rnd = new();
             int[] valores = {0,1};
 
             //usei 2+ e o menos 3 para ele nao pegar cordenadas de inicio muito perto dos limites da array
-            int start_x = 2 + rnd.Next(mapaComp.Length - 4); 
-            int start_y = 2 + rnd.Next(mapaComp[0].Length - 4);
+            
 
-            //defini um campo 5x5         
-            for(int i = 0; i < 5; i++)
+            //cria x chunks 5x5
+            for(int ci = 0; ci < aleat_chuncks; ci++)
             {
-                for(int j = 0; j < 5; j++)
+                int start_x = 2 + rnd.Next(mapaComp.Length - 4); 
+                int start_y = 2 + rnd.Next(mapaComp[0].Length - 4);
+
+                for(int i = 0; i < 5; i++)
                 {
-                    mapaComp[start_x - 2 + i][start_y - 2 + j] = 1;
-                }
-            }      
-        
+                    for(int j = 0; j < 5; j++)
+                    {
+                        mapaComp[start_x - 2 + i][start_y - 2 + j] = 1;
+                    }
+                }      
+            }
+
             //caso for adicionar mais desses pontos, colocar  
 
             for(int i = 0; i < mapaComp.Length; i++)
             {
                 for(int j = 0; j < mapaComp[0].Length; j++) //coloquei zero no index por que o mapa é retangular
                 {
-                    if(mapaComp[i][j] == null)
+                    if(mapaComp[i][j] == 0)
                     {
-                        mapaComp[i][j] = rnd.Next(2);   
+                        //faz que 1 a cada x valores (definido por esp_alea) possa ser aleatoriamente tornado 1 
+                        int n = rnd.Next(esp_alea);
+                        if(n == esp_alea -1 && mapaComp[i][j] == 0)
+                        {
+                            mapaComp[i][j] = 1;
+                        }
+                           
                     }
                 }
             }
@@ -201,3 +214,6 @@ namespace Batalha
 
 
 }
+
+
+
