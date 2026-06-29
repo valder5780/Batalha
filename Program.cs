@@ -216,4 +216,5 @@ namespace Batalha
 }
 
 
-
+// pesquisar mais sobre "biblioteca grafica de C#", sao bibliotecas para colocar interface grafica
+//rever o algoritmo de fazer o mapa 
