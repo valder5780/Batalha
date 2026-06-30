@@ -1,5 +1,10 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Concurrent;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Data;
+using System.Diagnostics;
+using System.Reflection.Emit;
 using System.Runtime.InteropServices.Marshalling;
 
 namespace Batalha
@@ -58,9 +63,10 @@ namespace Batalha
             }
             if(RI == 1)
             {
+                Console.WriteLine("gerando mapa");
                 Mapa mapa1 = new Mapa();
-                mapa1.definir_espaço(20, 25);
-                mapa1.gerar_mapa(5, 5);
+                mapa1.definir_espaço(15, 15);
+                mapa1.gerar_mapa(4, 5, 8, 3);
                 mapa1.mostrar_mapa();
             }
             if(RI == 2)
@@ -137,7 +143,6 @@ namespace Batalha
     public class Mapa
     {
         public int[][] mapaComp;
-        public int a = 2;
         public void definir_espaço(int xAxis = 50, int yAxis = 50)
         {
             mapaComp = new int[xAxis][];
@@ -145,14 +150,18 @@ namespace Batalha
             {
                 mapaComp[i] = new int[yAxis];  
             }
+            //sai tudo com zero nos valores indefinidos
 
 
         }
-        public void gerar_mapa(int aleat_chuncks = 10, int esp_alea = 20)
+        public void gerar_mapa(int aleat_chuncks = 2, int esp_alea = 20
+        , int conects = 2, int defCon_chance = 4)
         {
+
             Random rnd = new();
             int[] valores = {0,1};
-
+            int[] chuncks_x = new int[aleat_chuncks];
+            int[] chuncks_y = new int[aleat_chuncks];
             //usei 2+ e o menos 3 para ele nao pegar cordenadas de inicio muito perto dos limites da array
             
 
@@ -161,6 +170,8 @@ namespace Batalha
             {
                 int start_x = 2 + rnd.Next(mapaComp.Length - 4); 
                 int start_y = 2 + rnd.Next(mapaComp[0].Length - 4);
+                chuncks_x[ci] = start_x;
+                chuncks_y[ci] = start_y;
 
                 for(int i = 0; i < 5; i++)
                 {
@@ -169,10 +180,70 @@ namespace Batalha
                         mapaComp[start_x - 2 + i][start_y - 2 + j] = 1;
                     }
                 }      
+            } 
+            Console.WriteLine("primeira etapa concluida");
+            //criar x chuncks YxY
+            /*int tam_Chunck = 4;
+            for(int ci = 0; ci < aleat_chuncks; ci++)
+            {
+
+                for(int i = 0; i < tam_Chunck; i++)
+                {
+                    for(int j = 0; j < tam_Chunck; j++)
+                    {
+                        mapaComp[]
+                    }
+                }
+            }*/
+
+
+            //conectando as chuncks
+
+            for(int i = 0; i < conects; i++)
+            {
+                int pCon = rnd.Next(aleat_chuncks);
+                int sCon = rnd.Next(aleat_chuncks);
+                if(pCon == sCon && sCon != chuncks_x.Length - 1 ) //a segunda parte e para ter certeza que se
+                {                                                 //posso adicionar mais um em sCon sem dar erro
+                    sCon += 1;
+                }
+                if(pCon == sCon) // nao especifiquei mais pois se ele nao passar no de cima ele entra nesse
+                {
+                    sCon -= 1;
+                }
+                for(int j = 0; j < Math.Abs(chuncks_x[pCon] - chuncks_x[sCon]); j++)
+                {
+                    if(chuncks_x[pCon] > chuncks_x[sCon])
+                    {
+
+                        mapaComp[chuncks_x[pCon] - j][chuncks_y[pCon]] = 1;
+                        
+                    }
+                    else
+                    {
+                        mapaComp[chuncks_x[pCon] + j][chuncks_y[pCon]] = 1;
+                    }
+
+                }
+                for(int j = 0; j < Math.Abs(chuncks_y[pCon] - chuncks_y[sCon]); j++)
+                {
+                    if(chuncks_y[pCon] > chuncks_y[sCon])
+                    {
+                        mapaComp[chuncks_x[sCon]][chuncks_y[sCon] + j] = 1;
+                    }
+                    else
+                    {
+                        mapaComp[chuncks_x[sCon]][chuncks_y[sCon] - j] = 1;
+                    }
+                }
+                
+                mapaComp[chuncks_x[sCon]][chuncks_y[pCon]] = 1;
+
             }
 
-            //caso for adicionar mais desses pontos, colocar  
+            Console.WriteLine("segunda etapa concluida");
 
+            //coloca 1 aleatoriamente no mapa
             for(int i = 0; i < mapaComp.Length; i++)
             {
                 for(int j = 0; j < mapaComp[0].Length; j++) //coloquei zero no index por que o mapa é retangular
@@ -189,7 +260,111 @@ namespace Batalha
                     }
                 }
             }
+
+            Console.WriteLine("terceira etapa concluida");
+
+            //algoritmo para criar caminhos, se no caminho nao tiver conexoes ele conecta ele
+            for(int i = 0; i < mapaComp.Length; i++)
+            {
+                for(int j = 0; j < mapaComp[i].Length; j++)
+                {
+                    int mod = 0;
+                    if(mapaComp[i][j] == 1)
+                    {
+                        
+                        for(int xAdd = -1; xAdd < 2; xAdd++)
+                        {
+                            for(int yAdd = -1; yAdd < 2; yAdd++)
+                            {
+                                //aqui eu comecei a criar um sistema para o algoritmo _____________________________________________________________________________________________________
+                                
+                                int xt = i + xAdd;
+                                int yt = j + yAdd;
+                                if(xt <= mapaComp.Length -1 && xt != -1 && 
+                                yt <= mapaComp.Length -1  && yt != -1)  
+                                {
+                                    
+                                    if(mapaComp[xt][yt] == 0)
+                                    {
+                                        mod += 1;
+                                        if(xt == 0 || yt == 0 )
+                                        {
+                                            mod += 2;
+                                        }
+                                    }
+                                }
+                                
+
+                            }
+
+                        }
+                        int a = rnd.Next(defCon_chance);
+                        if(mod >= 11 && a != 0) // coloquei 10 para medir ramos principais, lembrando que mod mede o numero de paredes
+                        {
+                            int aleat_add = rnd.Next(4);
+                            
+
+                            restartSwitch:
+
+                            switch(aleat_add)
+                            {
+                                case 0:
+                                    if(i != 99 && mapaComp[i+ 1][j] == 0)
+                                    {
+                                        mapaComp[i+ 1][j] = 1;
+                                        break;
+                                    }
+                                    aleat_add = rnd.Next(4);
+
+                                    
+                                    goto restartSwitch;
+
+                                case 1:
+                                    if(i != 0 && mapaComp[i-1][j] == 0)
+                                    {
+                                        mapaComp[i-1][j] = 1;
+                                        break;
+                                    }
+                                    aleat_add = rnd.Next(4);
+                                    
+
+                                    goto restartSwitch;
+
+                                case 2:
+                                    
+                                    if(j != 99 && mapaComp[i][j+1] == 0)
+                                    {
+                                        mapaComp[i][j+1] = 1;
+                                        break;
+                                    }
+
+                                    aleat_add = rnd.Next(4);
+
+                                    goto restartSwitch;
+
+                                case 3:
+                                    if(j != 0 && mapaComp[i][j-1] == 0)
+                                    {
+                                        mapaComp[i][j-1] = 1;
+                                        break;
+                                    }
+                                    aleat_add = rnd.Next(4);
+
+                                    goto restartSwitch;
+
+                            }
+                            
+                            
+                        } // mod tem que ser maior 
+
+
+                        
+
+                    }
+                }
+            }
             
+            Console.WriteLine("quarta etapa concluida");
             
         }
 
@@ -217,4 +392,4 @@ namespace Batalha
 
 
 // pesquisar mais sobre "biblioteca grafica de C#", sao bibliotecas para colocar interface grafica
-//rever o algoritmo de fazer o mapa 
+//rever o algoritmo de fazer o mapa  --continuar revendo
