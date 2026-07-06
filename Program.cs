@@ -21,10 +21,18 @@ namespace Batalha
 
         static void Main()
         {
+            Console.WriteLine("gerando mapa");
+            Mapa mapa1 = new Mapa();
+            mapa1.definir_espaço(50, 50);
+            mapa1.gerar_mapa(7, 10, 10, 2, 2);
+            mapa1.mostrar_mapa();
+
             Console.WriteLine("me diga seu nome");
             nome = Console.ReadLine();
 
             Console.Write(nome + " ");
+                
+
             Distrib_Pontos();
         }
 
@@ -155,7 +163,7 @@ namespace Batalha
 
         }
         public void gerar_mapa(int aleat_chuncks = 2, int esp_alea = 20
-        , int conects = 2, int defCon_chance = 4)
+        , int conects = 2, int defCon_chance = 4, int juntCam_chance = 4)
         {
 
             Random rnd = new();
@@ -165,7 +173,7 @@ namespace Batalha
             //usei 2+ e o menos 3 para ele nao pegar cordenadas de inicio muito perto dos limites da array
             
 
-            //cria x chunks 5x5
+            //cria x chunks 5x5 ------------------------------------------------------------------------------------------------------------------------
             for(int ci = 0; ci < aleat_chuncks; ci++)
             {
                 int start_x = 2 + rnd.Next(mapaComp.Length - 4); 
@@ -182,8 +190,8 @@ namespace Batalha
                 }      
             } 
             Console.WriteLine("primeira etapa concluida");
-            //criar x chuncks YxY
-            /*int tam_Chunck = 4;
+            /*//criar x chuncks YxY
+            int tam_Chunck = 4;
             for(int ci = 0; ci < aleat_chuncks; ci++)
             {
 
@@ -197,7 +205,7 @@ namespace Batalha
             }*/
 
 
-            //conectando as chuncks
+            //conectando as chuncks-----------------------------------------------------------------------------------------------------
 
             for(int i = 0; i < conects; i++)
             {
@@ -242,8 +250,10 @@ namespace Batalha
             }
 
             Console.WriteLine("segunda etapa concluida");
+            
+            
 
-            //coloca 1 aleatoriamente no mapa
+            //coloca 1 aleatoriamente no mapa ---------------------------------------------------------------------------------------------------------
             for(int i = 0; i < mapaComp.Length; i++)
             {
                 for(int j = 0; j < mapaComp[0].Length; j++) //coloquei zero no index por que o mapa é retangular
@@ -261,107 +271,139 @@ namespace Batalha
                 }
             }
 
+
             Console.WriteLine("terceira etapa concluida");
 
             //algoritmo para criar caminhos, se no caminho nao tiver conexoes ele conecta ele
-            for(int i = 0; i < mapaComp.Length; i++)
+            for(int reRead = 0; reRead < 1; reRead++) //ele reusa o algoritmo mas acho que talvez seja desnecessario, revisar ************
             {
-                for(int j = 0; j < mapaComp[i].Length; j++)
+                for(int i = 0; i < mapaComp.Length; i++)
                 {
-                    int mod = 0;
-                    if(mapaComp[i][j] == 1)
+                    for(int j = 0; j < mapaComp[i].Length; j++)
                     {
-                        
-                        for(int xAdd = -1; xAdd < 2; xAdd++)
+                        int mod = 0;
+                        if(mapaComp[i][j] == 1)
                         {
-                            for(int yAdd = -1; yAdd < 2; yAdd++)
+                            
+                            for(int xAdd = -1; xAdd < 2; xAdd++)
                             {
-                                //aqui eu comecei a criar um sistema para o algoritmo _____________________________________________________________________________________________________
-                                
-                                int xt = i + xAdd;
-                                int yt = j + yAdd;
-                                if(xt <= mapaComp.Length -1 && xt != -1 && 
-                                yt <= mapaComp.Length -1  && yt != -1)  
+                                for(int yAdd = -1; yAdd < 2; yAdd++)
                                 {
+                                    //aqui eu comecei a criar um sistema para o algoritmo _____________________________________________________________________________________________________
                                     
-                                    if(mapaComp[xt][yt] == 0)
+                                    int xt = i + xAdd;
+                                    int yt = j + yAdd;
+                                    if(xt <= mapaComp.Length -1 && xt != -1 && 
+                                    yt <= mapaComp.Length -1  && yt != -1)  
                                     {
-                                        mod += 1;
-                                        if(xt == 0 || yt == 0 )
+                                        
+                                        if(mapaComp[xt][yt] == 0)
                                         {
-                                            mod += 2;
+                                            //0 nos cantos += 1; 0 nas rotas adjacentes  += 4
+                                            mod += 1;
+                                            if(xt == 0 || yt == 0 ) 
+                                            {
+                                                mod += 3; 
+                                            }
                                         }
                                     }
+                                    
+
                                 }
+
+                            }
+                            int a = rnd.Next(defCon_chance);
+                            
+                            if(mod >= 16 && a != 0) // coloquei 10 para medir ramos principais, lembrando que mod mede o numero de paredes
+                            {
+                                ; //continuar teste *****************
+                                int aleat_add = rnd.Next(4);
                                 
 
-                            }
+                                restartSwitch:
+
+                                switch(aleat_add)
+                                {
+                                    case 0:
+                                        if(i != mapaComp.Length - 1 && mapaComp[i+ 1][j] == 0)
+                                        {
+                                            mapaComp[i+ 1][j] = 1;
+                                            break;
+                                        }
+                                        aleat_add = rnd.Next(4);
+                                    
+
+                                        
+                                        goto restartSwitch;
+
+                                    case 1:
+                                        if(i != 0 && mapaComp[i-1][j] == 0)
+                                        {
+                                            mapaComp[i-1][j] = 1;
+                                            break;
+                                        }
+                                        aleat_add = rnd.Next(4);
+                                        
+
+                                        goto restartSwitch;
+
+                                    case 2:
+                                        
+                                        if(j != mapaComp[i].Length - 1 && mapaComp[i][j+1] == 0)
+                                        {
+                                            mapaComp[i][j+1] = 1;
+                                            break;
+                                        }
+
+                                        aleat_add = rnd.Next(4);
+
+                                        goto restartSwitch;
+
+                                    case 3:
+                                        if(j != 0 && mapaComp[i][j-1] == 0)
+                                        {
+                                            mapaComp[i][j-1] = 1;
+                                            break;
+                                        }
+                                        aleat_add = rnd.Next(4);
+
+                                        goto restartSwitch;
+
+                                }
+                                
+                                 //Revisar essa parte ****************************************
+
+                            } // mod tem que ser maior 
+
 
                         }
-                        int a = rnd.Next(defCon_chance);
-                        if(mod >= 11 && a != 0) // coloquei 10 para medir ramos principais, lembrando que mod mede o numero de paredes
+                        //essa parte junta os caminhos que estao de frente um para o outro
+                        if(mapaComp[i][j] == 0 && rnd.Next(juntCam_chance) == 0)
                         {
-                            int aleat_add = rnd.Next(4);
-                            
-
-                            restartSwitch:
-
-                            switch(aleat_add)
+                            try
                             {
-                                case 0:
-                                    if(i != 99 && mapaComp[i+ 1][j] == 0)
-                                    {
-                                        mapaComp[i+ 1][j] = 1;
-                                        break;
-                                    }
-                                    aleat_add = rnd.Next(4);
-
-                                    
-                                    goto restartSwitch;
-
-                                case 1:
-                                    if(i != 0 && mapaComp[i-1][j] == 0)
-                                    {
-                                        mapaComp[i-1][j] = 1;
-                                        break;
-                                    }
-                                    aleat_add = rnd.Next(4);
-                                    
-
-                                    goto restartSwitch;
-
-                                case 2:
-                                    
-                                    if(j != 99 && mapaComp[i][j+1] == 0)
-                                    {
-                                        mapaComp[i][j+1] = 1;
-                                        break;
-                                    }
-
-                                    aleat_add = rnd.Next(4);
-
-                                    goto restartSwitch;
-
-                                case 3:
-                                    if(j != 0 && mapaComp[i][j-1] == 0)
-                                    {
-                                        mapaComp[i][j-1] = 1;
-                                        break;
-                                    }
-                                    aleat_add = rnd.Next(4);
-
-                                    goto restartSwitch;
+                                if(mapaComp[i+1][j] == 1 && mapaComp[i-1][j] == 1)
+                                {
+                                    mapaComp[i][j] = 1;
+                                }
+                            }
+                            catch{}
+                            try
+                            {
+                                if(mapaComp[i][j+1] == 1 && mapaComp[i][j-1] == 1)
+                                {
+                                    mapaComp[i][j] = 1;
+                                }
+                            }
+                            catch{}
 
                             }
-                            
-                            
-                        } // mod tem que ser maior 
-
-
-                        
-
                     }
                 }
+
+                Console.WriteLine(" ");
+                mostrar_mapa();
+
             }
             
             Console.WriteLine("quarta etapa concluida");
@@ -392,4 +434,4 @@ namespace Batalha
 
 
 // pesquisar mais sobre "biblioteca grafica de C#", sao bibliotecas para colocar interface grafica
-//rever o algoritmo de fazer o mapa  --continuar revendo
+//rever o algoritmo de fazer o mapa  --continuar revendo --continuar revendo
