@@ -23,8 +23,8 @@ namespace Batalha
         {
             Console.WriteLine("gerando mapa");
             Mapa mapa1 = new Mapa();
-            mapa1.definir_espaço(50, 50);
-            mapa1.gerar_mapa(7, 10, 10, 2, 2);
+            mapa1.definir_espaço(20, 20);
+            mapa1.gerar_mapa(8, 10, 10, 2, 2);
             mapa1.mostrar_mapa();
 
             Console.WriteLine("me diga seu nome");
@@ -167,29 +167,80 @@ namespace Batalha
         {
 
             Random rnd = new();
-            int[] valores = {0,1};
             int[] chuncks_x = new int[aleat_chuncks];
             int[] chuncks_y = new int[aleat_chuncks];
+            int chuncksRegist = 0; //marca quantas chuncks estao registradas
+
             //usei 2+ e o menos 3 para ele nao pegar cordenadas de inicio muito perto dos limites da array
             
 
             //cria x chunks 5x5 ------------------------------------------------------------------------------------------------------------------------
             for(int ci = 0; ci < aleat_chuncks; ci++)
             {
+                //Obs: ele nao pode ficar abaixo de reSortNumbers, por que se nao ele vai ficar resetando para zero e nao vai funcionar
+                int repeatCount = 0; 
+
+                
+                reSortNumbers:
+
                 int start_x = 2 + rnd.Next(mapaComp.Length - 4); 
                 int start_y = 2 + rnd.Next(mapaComp[0].Length - 4);
+                
+                
+                
+                int TrySpacedCount = 0; 
+                
+                
+
+                //usei chunck_x para contar mas e so pq chunck x e y tem o mesmo tamanho e principio
+                //essa parte serve para ver se nao tem outra chunck na mesma posicao que vai construir essa nova chunck (checa pela area 5x5 da chunck ja existente)
+                for(int valid = 0; valid < chuncksRegist; valid++)
+                {
+                    //caa -> x ou x <-aac                                                 e      caa -> x ou x <- aac
+                    if((chuncks_x[valid] + 4 < start_x || chuncks_x[valid] - 4 > start_x) || (chuncks_y[valid] + 4 < start_y || chuncks_y[valid] - 4 > start_y))
+                    {
+                        TrySpacedCount += 1;
+                    }
+                } 
+
+                if(TrySpacedCount == chuncksRegist)
+                {
+                    for(int i = 0; i < 5; i++)
+                    {
+                        for(int j = 0; j < 5; j++)
+                        {
+                            mapaComp[start_x - 2 + i][start_y - 2 + j] = 1;
+                        }
+                    }
+                }
+                else
+                {
+
+                    repeatCount += 1;
+
+                    if(repeatCount >= 500)
+                    {
+                        Console.WriteLine("excesso de repetiçao, muitas poucas coordenadas sobraram para colocar chuncks");
+                        goto finish_chuncking; // ele sai dessa etapa, deve estar no final das chaves do for()
+                    }
+
+                    //recomeça desde o inicio a funçao
+                    Console.Write("tentativa_deu_errada");
+                    Console.WriteLine(repeatCount + " " + start_x + " " + start_y);
+                    
+                    goto reSortNumbers;
+                }                      
+                       
+                //apos criar as chuncks ele sobe as cordenadas centrais delas
                 chuncks_x[ci] = start_x;
                 chuncks_y[ci] = start_y;
+                chuncksRegist += 1;
 
-                for(int i = 0; i < 5; i++)
-                {
-                    for(int j = 0; j < 5; j++)
-                    {
-                        mapaComp[start_x - 2 + i][start_y - 2 + j] = 1;
-                    }
-                }      
             } 
+            finish_chuncking:
+
             Console.WriteLine("primeira etapa concluida");
+            
             /*//criar x chuncks YxY
             int tam_Chunck = 4;
             for(int ci = 0; ci < aleat_chuncks; ci++)
@@ -204,9 +255,7 @@ namespace Batalha
                 }
             }*/
 
-
             //conectando as chuncks-----------------------------------------------------------------------------------------------------
-
             for(int i = 0; i < conects; i++)
             {
                 int pCon = rnd.Next(aleat_chuncks);
@@ -248,11 +297,8 @@ namespace Batalha
                 mapaComp[chuncks_x[sCon]][chuncks_y[pCon]] = 1;
 
             }
-
             Console.WriteLine("segunda etapa concluida");
             
-            
-
             //coloca 1 aleatoriamente no mapa ---------------------------------------------------------------------------------------------------------
             for(int i = 0; i < mapaComp.Length; i++)
             {
@@ -270,141 +316,136 @@ namespace Batalha
                     }
                 }
             }
-
-
             Console.WriteLine("terceira etapa concluida");
 
+
             //algoritmo para criar caminhos, se no caminho nao tiver conexoes ele conecta ele
-            for(int reRead = 0; reRead < 1; reRead++) //ele reusa o algoritmo mas acho que talvez seja desnecessario, revisar ************
+            for(int i = 0; i < mapaComp.Length; i++)
             {
-                for(int i = 0; i < mapaComp.Length; i++)
+                for(int j = 0; j < mapaComp[i].Length; j++)
                 {
-                    for(int j = 0; j < mapaComp[i].Length; j++)
+                    int mod = 0;                           
+                    if(mapaComp[i][j] == 1)
                     {
-                        int mod = 0;
-                        if(mapaComp[i][j] == 1)
+                        
+                        for(int xAdd = -1; xAdd < 2; xAdd++)
                         {
-                            
-                            for(int xAdd = -1; xAdd < 2; xAdd++)
+                            for(int yAdd = -1; yAdd < 2; yAdd++)
                             {
-                                for(int yAdd = -1; yAdd < 2; yAdd++)
+                                //aqui eu comecei a criar um sistema para o algoritmo _____________________________________________________________________________________________________
+                                
+                                int xt = i + xAdd;
+                                int yt = j + yAdd;
+                                if(xt <= mapaComp.Length -1 && xt != -1 && 
+                                yt <= mapaComp.Length -1  && yt != -1)  
                                 {
-                                    //aqui eu comecei a criar um sistema para o algoritmo _____________________________________________________________________________________________________
-                                    
-                                    int xt = i + xAdd;
-                                    int yt = j + yAdd;
-                                    if(xt <= mapaComp.Length -1 && xt != -1 && 
-                                    yt <= mapaComp.Length -1  && yt != -1)  
-                                    {
                                         
-                                        if(mapaComp[xt][yt] == 0)
+                                    if(mapaComp[xt][yt] == 0)
+                                    {
+                                        //0 nos cantos += 1; 0 nas rotas adjacentes  += 4
+                                        mod += 1;
+                                        if(xt == 0 || yt == 0 ) 
                                         {
-                                            //0 nos cantos += 1; 0 nas rotas adjacentes  += 4
-                                            mod += 1;
-                                            if(xt == 0 || yt == 0 ) 
-                                            {
-                                                mod += 3; 
-                                            }
+                                            mod += 3; 
                                         }
                                     }
-                                    
-
                                 }
+                                    
 
                             }
-                            int a = rnd.Next(defCon_chance);
+
+                        }
+                        int a = rnd.Next(defCon_chance);
                             
-                            if(mod >= 16 && a != 0) // coloquei 10 para medir ramos principais, lembrando que mod mede o numero de paredes
-                            {
-                                ; //continuar teste *****************
-                                int aleat_add = rnd.Next(4);
+                        if(mod >= 16 && a != 0) // coloquei 10 para medir ramos principais, lembrando que mod mede o numero de paredes
+                        {
+                            int aleat_add = rnd.Next(4);
                                 
 
-                                restartSwitch:
+                            restartSwitch:
 
-                                switch(aleat_add)
-                                {
-                                    case 0:
-                                        if(i != mapaComp.Length - 1 && mapaComp[i+ 1][j] == 0)
-                                        {
-                                            mapaComp[i+ 1][j] = 1;
-                                            break;
-                                        }
-                                        aleat_add = rnd.Next(4);
+                            switch(aleat_add)
+                            {
+                                case 0:
+                                    if(i != mapaComp.Length - 1 && mapaComp[i+ 1][j] == 0)
+                                    {
+                                        mapaComp[i+ 1][j] = 1;
+                                        break;
+                                    }
+                                    aleat_add = rnd.Next(4);
                                     
 
                                         
-                                        goto restartSwitch;
+                                    goto restartSwitch;
 
-                                    case 1:
-                                        if(i != 0 && mapaComp[i-1][j] == 0)
-                                        {
-                                            mapaComp[i-1][j] = 1;
-                                            break;
-                                        }
-                                        aleat_add = rnd.Next(4);
+                                case 1:
+                                    if(i != 0 && mapaComp[i-1][j] == 0)
+                                    {
+                                        mapaComp[i-1][j] = 1;
+                                        break;
+                                    }
+                                    aleat_add = rnd.Next(4);
                                         
 
-                                        goto restartSwitch;
+                                    goto restartSwitch;
 
-                                    case 2:
+                                case 2:
                                         
-                                        if(j != mapaComp[i].Length - 1 && mapaComp[i][j+1] == 0)
-                                        {
-                                            mapaComp[i][j+1] = 1;
-                                            break;
-                                        }
+                                    if(j != mapaComp[i].Length - 1 && mapaComp[i][j+1] == 0)
+                                    {
+                                        mapaComp[i][j+1] = 1;
+                                        break;
+                                    }
 
-                                        aleat_add = rnd.Next(4);
+                                    aleat_add = rnd.Next(4);
 
-                                        goto restartSwitch;
+                                    goto restartSwitch;
 
-                                    case 3:
-                                        if(j != 0 && mapaComp[i][j-1] == 0)
-                                        {
-                                            mapaComp[i][j-1] = 1;
-                                            break;
-                                        }
-                                        aleat_add = rnd.Next(4);
+                                case 3:
+                                    if(j != 0 && mapaComp[i][j-1] == 0)
+                                    {
+                                        mapaComp[i][j-1] = 1;
+                                        break;
+                                    }
+                                    aleat_add = rnd.Next(4);
 
-                                        goto restartSwitch;
+                                    goto restartSwitch;
 
-                                }
+                            }
                                 
                                  //Revisar essa parte ****************************************
 
-                            } // mod tem que ser maior 
+                        } // mod tem que ser maior 
 
 
-                        }
+                    }
                         //essa parte junta os caminhos que estao de frente um para o outro
-                        if(mapaComp[i][j] == 0 && rnd.Next(juntCam_chance) == 0)
+                    if(mapaComp[i][j] == 0 && rnd.Next(juntCam_chance) == 0)
+                    {
+                        try
                         {
-                            try
+                            if(mapaComp[i+1][j] == 1 && mapaComp[i-1][j] == 1)
                             {
-                                if(mapaComp[i+1][j] == 1 && mapaComp[i-1][j] == 1)
-                                {
-                                    mapaComp[i][j] = 1;
-                                }
+                                mapaComp[i][j] = 1;
                             }
-                            catch{}
-                            try
+                        }
+                        catch{}
+                        try
+                        {
+                            if(mapaComp[i][j+1] == 1 && mapaComp[i][j-1] == 1)
                             {
-                                if(mapaComp[i][j+1] == 1 && mapaComp[i][j-1] == 1)
-                                {
-                                    mapaComp[i][j] = 1;
-                                }
+                                mapaComp[i][j] = 1;
                             }
-                            catch{}
+                        }
+                        catch{}
 
-                            }
                     }
                 }
-
-                Console.WriteLine(" ");
-                mostrar_mapa();
-
             }
+
+            Console.WriteLine(" ");
+            //mostrar_mapa();
+
             
             Console.WriteLine("quarta etapa concluida");
             
