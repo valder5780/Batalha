@@ -24,7 +24,7 @@ namespace Batalha
             Console.WriteLine("gerando mapa");
             Mapa mapa1 = new Mapa();
             mapa1.definir_espaço(20, 20);
-            mapa1.gerar_mapa(8, 10, 10, 2, 2);
+            mapa1.gerar_mapa();
             mapa1.mostrar_mapa();
 
             Console.WriteLine("me diga seu nome");
@@ -151,7 +151,7 @@ namespace Batalha
     public class Mapa
     {
         public int[][] mapaComp;
-        public void definir_espaço(int xAxis = 50, int yAxis = 50)
+        public void definir_espaço(int xAxis = 25, int yAxis = 25)
         {
             mapaComp = new int[xAxis][];
             for(int i = 0; i < mapaComp.Length; i++)
@@ -162,9 +162,13 @@ namespace Batalha
 
 
         }
-        public void gerar_mapa(int aleat_chuncks = 2, int esp_alea = 20
-        , int conects = 2, int defCon_chance = 4, int juntCam_chance = 4)
-        {
+        
+        //legenda: aleat_chuncks = numero de chunks, esp_alea = e a chance de um zero virar 1 e de 1/esp_alea,
+        // connects = quantas pontes entre as chuncks vao ser colocadas, defCon_chance = a chance usar o algoritimo 1/defCon_chance
+        //juntCam_chance = a chance de conectar espacos adjacentes (101 -> 111)
+        public void gerar_mapa(int aleat_chuncks = 5, int esp_alea = 8
+        , int conects = 8, int defCon_chance = 1, int juntCam_chance = 2)
+        { 
 
             Random rnd = new();
             int[] chuncks_x = new int[aleat_chuncks];
@@ -174,7 +178,7 @@ namespace Batalha
             //usei 2+ e o menos 3 para ele nao pegar cordenadas de inicio muito perto dos limites da array
             
 
-            //cria x chunks 5x5 ------------------------------------------------------------------------------------------------------------------------
+            //cria x chunks base 5x5 ------------------------------------------------------------------------------------------------------------------------
             for(int ci = 0; ci < aleat_chuncks; ci++)
             {
                 //Obs: ele nao pode ficar abaixo de reSortNumbers, por que se nao ele vai ficar resetando para zero e nao vai funcionar
@@ -197,7 +201,7 @@ namespace Batalha
                 for(int valid = 0; valid < chuncksRegist; valid++)
                 {
                     //caa -> x ou x <-aac                                                 e      caa -> x ou x <- aac
-                    if((chuncks_x[valid] + 4 < start_x || chuncks_x[valid] - 4 > start_x) || (chuncks_y[valid] + 4 < start_y || chuncks_y[valid] - 4 > start_y))
+                    if((chuncks_x[valid] + 5 < start_x || chuncks_x[valid] - 5 > start_x) || (chuncks_y[valid] + 5 < start_y || chuncks_y[valid] - 5 > start_y))
                     {
                         TrySpacedCount += 1;
                     }
@@ -240,20 +244,28 @@ namespace Batalha
             finish_chuncking:
 
             Console.WriteLine("primeira etapa concluida");
+            mostrar_mapa();
             
-            /*//criar x chuncks YxY
-            int tam_Chunck = 4;
+            //criar x chuncks extras(SalasExt) YxY (tamanho definido como aleatorio)
+            //OBS: a chunck grande define a base de coordenada no meio, essa define no canto superior esquerdo ´\ 
+            
             for(int ci = 0; ci < aleat_chuncks; ci++)
             {
+                int tam_ChunckX = rnd.Next(3) + 2; //vai de 2 ate 4 (2+2) o tamanho
+                int tam_ChunckY = rnd.Next(3) + 2;// vai de 2 ate 4 o tamanho
+                int SalasExt_cordX = rnd.Next(mapaComp.Length - 1);
+                int SalasExt_cordY = rnd.Next(mapaComp[0].Length);
 
-                for(int i = 0; i < tam_Chunck; i++)
+                for(int i = 0; i < tam_ChunckX  && SalasExt_cordX + i < mapaComp.Length -1; i++) //a segunda parte o && serve para ele nao chegar na parede e dar exception out of range
                 {
-                    for(int j = 0; j < tam_Chunck; j++)
+                    for(int j = 0; j < tam_ChunckY && SalasExt_cordY + j < mapaComp[0].Length -1; j++)
                     {
-                        mapaComp[]
+                        mapaComp[SalasExt_cordX + i][SalasExt_cordY + j] = 1;
                     }
                 }
-            }*/
+            }
+            
+            mostrar_mapa();
 
             //conectando as chuncks-----------------------------------------------------------------------------------------------------
             for(int i = 0; i < conects; i++)
@@ -298,6 +310,7 @@ namespace Batalha
 
             }
             Console.WriteLine("segunda etapa concluida");
+            mostrar_mapa();
             
             //coloca 1 aleatoriamente no mapa ---------------------------------------------------------------------------------------------------------
             for(int i = 0; i < mapaComp.Length; i++)
@@ -317,6 +330,7 @@ namespace Batalha
                 }
             }
             Console.WriteLine("terceira etapa concluida");
+            mostrar_mapa();
 
 
             //algoritmo para criar caminhos, se no caminho nao tiver conexoes ele conecta ele
@@ -474,5 +488,5 @@ namespace Batalha
 }
 
 
-// pesquisar mais sobre "biblioteca grafica de C#", sao bibliotecas para colocar interface grafica
-//rever o algoritmo de fazer o mapa  --continuar revendo --continuar revendo
+// pesquisar mais sobre "biblioteca grafica de C#", sao bibliotecas para colocar interface grafica --tentar OpenTK (esse nao e o que o junior recomendou)
+//rever o algoritmo de fazer o mapa  --continuar revendo --continuar revendo --completo
