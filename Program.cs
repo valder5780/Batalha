@@ -6,6 +6,7 @@ using System.Data;
 using System.Diagnostics;
 using System.Reflection.Emit;
 using System.Runtime.InteropServices.Marshalling;
+using Raylib_cs;
 
 namespace Batalha
 {
@@ -21,19 +22,28 @@ namespace Batalha
 
         static void Main()
         {
+            /* Comandos basicos de Raylib, abre desenha e fecha uma janela
+            Raylib.InitWindow(800, 480, "Batalha");
+            Raylib.BeginDrawing();
+            Raylib.ClearBackground(Color.Orange);
+            Raylib.DrawText("Hello my friend", 300, 230, 20, Color.Black);
+            Raylib.EndDrawing();
+            Raylib.CloseWindow();
+            */
+
             Console.WriteLine("gerando mapa");
             Mapa mapa1 = new Mapa();
-            mapa1.definir_espaço(20, 20);
+            mapa1.definir_espaço(50, 50);
             mapa1.gerar_mapa();
             mapa1.mostrar_mapa();
 
-            Console.WriteLine("me diga seu nome");
+            /*Console.WriteLine("me diga seu nome");
             nome = Console.ReadLine();
 
             Console.Write(nome + " ");
                 
-
-            Distrib_Pontos();
+            */
+            Distrib_Pontos(); 
         }
 
         static void Distrib_Pontos()
@@ -166,18 +176,25 @@ namespace Batalha
         //legenda: aleat_chuncks = numero de chunks, esp_alea = e a chance de um zero virar 1 e de 1/esp_alea,
         // connects = quantas pontes entre as chuncks vao ser colocadas, defCon_chance = a chance usar o algoritimo 1/defCon_chance
         //juntCam_chance = a chance de conectar espacos adjacentes (101 -> 111)
-        public void gerar_mapa(int aleat_chuncks = 5, int esp_alea = 8
+        public void gerar_mapa(int aleat_chuncks = 6, int esp_alea = 8
         , int conects = 8, int defCon_chance = 1, int juntCam_chance = 2)
         { 
 
             Random rnd = new();
-            int[] chuncks_x = new int[aleat_chuncks];
-            int[] chuncks_y = new int[aleat_chuncks];
-            int chuncksRegist = 0; //marca quantas chuncks estao registradas
+            int[] mChuncks_x = new int[aleat_chuncks]; //guarda a casa do centro que representa a chuncks matriz (5x5) eixo x
+            int[] mChuncks_y = new int[aleat_chuncks]; //guarda a casa do centro que representa a chuncks matriz (5x5) eixo y
+            int chuncksRegist = 0; //marca quantas chuncks 5x5 estao registradas
+
+            int[] microChuncks_x = new int[aleat_chuncks]; //guarda a casa que representar a matriz menor
+            int[] microChuncks_y = new int[aleat_chuncks]; //guarda a casa que representar a matriz menor
+            int microChuncksRegist = 0;
+
+            //colocar para adicionar usando chuncksCon.Add() o index de todas as chuncks que ja tiverem pelo menos uma conexao com outra, essa lista no final 
+            //tem que ter todos os index de todas as chuncks
+            List<int> chuncksCon = new List<int>(); 
+
 
             //usei 2+ e o menos 3 para ele nao pegar cordenadas de inicio muito perto dos limites da array
-            
-
             //cria x chunks base 5x5 ------------------------------------------------------------------------------------------------------------------------
             for(int ci = 0; ci < aleat_chuncks; ci++)
             {
@@ -201,7 +218,7 @@ namespace Batalha
                 for(int valid = 0; valid < chuncksRegist; valid++)
                 {
                     //caa -> x ou x <-aac                                                 e      caa -> x ou x <- aac
-                    if((chuncks_x[valid] + 5 < start_x || chuncks_x[valid] - 5 > start_x) || (chuncks_y[valid] + 5 < start_y || chuncks_y[valid] - 5 > start_y))
+                    if((mChuncks_x[valid] + 5 < start_x || mChuncks_x[valid] - 5 > start_x) || (mChuncks_y[valid] + 5 < start_y || mChuncks_y[valid] - 5 > start_y))
                     {
                         TrySpacedCount += 1;
                     }
@@ -236,8 +253,8 @@ namespace Batalha
                 }                      
                        
                 //apos criar as chuncks ele sobe as cordenadas centrais delas
-                chuncks_x[ci] = start_x;
-                chuncks_y[ci] = start_y;
+                mChuncks_x[ci] = start_x;
+                mChuncks_y[ci] = start_y;
                 chuncksRegist += 1;
 
             } 
@@ -255,6 +272,9 @@ namespace Batalha
                 int tam_ChunckY = rnd.Next(3) + 2;// vai de 2 ate 4 o tamanho
                 int SalasExt_cordX = rnd.Next(mapaComp.Length - 1);
                 int SalasExt_cordY = rnd.Next(mapaComp[0].Length);
+                microChuncks_x[ci] = SalasExt_cordX;
+                microChuncks_y[ci] = SalasExt_cordY;
+                microChuncksRegist += 1;
 
                 for(int i = 0; i < tam_ChunckX  && SalasExt_cordX + i < mapaComp.Length -1; i++) //a segunda parte o && serve para ele nao chegar na parede e dar exception out of range
                 {
@@ -264,7 +284,7 @@ namespace Batalha
                     }
                 }
             }
-            
+            Console.WriteLine("segunda etapa concluida");
             mostrar_mapa();
 
             //conectando as chuncks-----------------------------------------------------------------------------------------------------
@@ -272,7 +292,7 @@ namespace Batalha
             {
                 int pCon = rnd.Next(aleat_chuncks);
                 int sCon = rnd.Next(aleat_chuncks);
-                if(pCon == sCon && sCon != chuncks_x.Length - 1 ) //a segunda parte e para ter certeza que se
+                if(pCon == sCon && sCon != mChuncks_x.Length - 1 ) //a segunda parte e para ter certeza que se
                 {                                                 //posso adicionar mais um em sCon sem dar erro
                     sCon += 1;
                 }
@@ -280,39 +300,40 @@ namespace Batalha
                 {
                     sCon -= 1;
                 }
-                for(int j = 0; j < Math.Abs(chuncks_x[pCon] - chuncks_x[sCon]); j++)
+                for(int j = 0; j < Math.Abs(mChuncks_x[pCon] - mChuncks_x[sCon]); j++)
                 {
-                    if(chuncks_x[pCon] > chuncks_x[sCon])
+                    if(mChuncks_x[pCon] > mChuncks_x[sCon])
                     {
 
-                        mapaComp[chuncks_x[pCon] - j][chuncks_y[pCon]] = 1;
+                        mapaComp[mChuncks_x[pCon] - j][mChuncks_y[pCon]] = 1;
                         
                     }
                     else
                     {
-                        mapaComp[chuncks_x[pCon] + j][chuncks_y[pCon]] = 1;
+                        mapaComp[mChuncks_x[pCon] + j][mChuncks_y[pCon]] = 1;
                     }
 
                 }
-                for(int j = 0; j < Math.Abs(chuncks_y[pCon] - chuncks_y[sCon]); j++)
+                for(int j = 0; j < Math.Abs(mChuncks_y[pCon] - mChuncks_y[sCon]); j++)
                 {
-                    if(chuncks_y[pCon] > chuncks_y[sCon])
+                    if(mChuncks_y[pCon] > mChuncks_y[sCon])
                     {
-                        mapaComp[chuncks_x[sCon]][chuncks_y[sCon] + j] = 1;
+                        mapaComp[mChuncks_x[sCon]][mChuncks_y[sCon] + j] = 1;
                     }
                     else
                     {
-                        mapaComp[chuncks_x[sCon]][chuncks_y[sCon] - j] = 1;
+                        mapaComp[mChuncks_x[sCon]][mChuncks_y[sCon] - j] = 1;
                     }
                 }
                 
-                mapaComp[chuncks_x[sCon]][chuncks_y[pCon]] = 1;
+                mapaComp[mChuncks_x[sCon]][mChuncks_y[pCon]] = 1;
 
             }
-            Console.WriteLine("segunda etapa concluida");
+            Console.WriteLine("terceira etapa concluida");
             mostrar_mapa();
             
-            //coloca 1 aleatoriamente no mapa ---------------------------------------------------------------------------------------------------------
+            //resolvi tirar a aleatoriedade de 1 no mapa *****
+            /*//coloca 1 aleatoriamente no mapa ---------------------------------------------------------------------------------------------------------
             for(int i = 0; i < mapaComp.Length; i++)
             {
                 for(int j = 0; j < mapaComp[0].Length; j++) //coloquei zero no index por que o mapa é retangular
@@ -329,10 +350,10 @@ namespace Batalha
                     }
                 }
             }
-            Console.WriteLine("terceira etapa concluida");
-            mostrar_mapa();
+            Console.WriteLine("quarta etapa concluida");
+            mostrar_mapa();*/
 
-
+            //revisar se esse algoritimo funciona ******
             //algoritmo para criar caminhos, se no caminho nao tiver conexoes ele conecta ele
             for(int i = 0; i < mapaComp.Length; i++)
             {
@@ -456,12 +477,33 @@ namespace Batalha
                     }
                 }
             }
-
+            Console.WriteLine("quinta etapa concluida");
             Console.WriteLine(" ");
-            //mostrar_mapa();
+            mostrar_mapa();
+
+            //talvez possa ser retirado ja que vou tirar os 1 aleatorios do mapa ****
+            //limpa os 1 que estao perdidos no mapa
+            for(int i = 0; i < mapaComp.Length; i++)
+            {
+                for(int j = 0; j < mapaComp.Length; j++)
+                {
+                    if(mapaComp[i][j] == 1)
+                    {
+
+
+                        if((i == 0 || mapaComp[i-1][j] == 0) && (i == mapaComp.Length -1 || mapaComp[i+1][j] == 0) && 
+                        (j == 0 || mapaComp[i][j-1] == 0) && (j == mapaComp[i].Length -1 || mapaComp[i][j+1] == 0))
+                        {
+                            mapaComp[i][j] = 0;   
+                        }
+
+                    }
+                    
+                }
+            }
 
             
-            Console.WriteLine("quarta etapa concluida");
+           
             
         }
 
@@ -488,5 +530,4 @@ namespace Batalha
 }
 
 
-// pesquisar mais sobre "biblioteca grafica de C#", sao bibliotecas para colocar interface grafica --tentar OpenTK (esse nao e o que o junior recomendou)
-//rever o algoritmo de fazer o mapa  --continuar revendo --continuar revendo --completo
+
